@@ -1,4 +1,5 @@
 use num_bigint::BigUint;
+use num_traits::Zero;
 use thiserror::Error;
 
 use crate::fast::{self, FastNttParams};
@@ -47,24 +48,27 @@ fn read_word(data: &[u8], offset: &mut usize) -> Result<BigUint, PrecompileError
     Ok(val)
 }
 
-/// Read a 32-byte big-endian word, returning it as usize. Errors if > usize::MAX.
+/// Read a 32-byte big-endian word, returning it as usize.
+/// Rejects values that exceed the input length (impossible to be valid).
 fn read_word_usize(data: &[u8], offset: &mut usize) -> Result<usize, PrecompileError> {
     let val = read_word(data, offset)?;
     if val.bits() > 64 {
         return Err(PrecompileError::Overflow("value exceeds 64 bits"));
     }
-    // Convert through u64 for portability
     let bytes = val.to_bytes_be();
     let mut buf = [0u8; 8];
     let start = 8usize.saturating_sub(bytes.len());
     buf[start..start + bytes.len()].copy_from_slice(&bytes);
-    let v = u64::from_be_bytes(buf);
-    Ok(v as usize)
+    let v = u64::from_be_bytes(buf) as usize;
+    if v > data.len() {
+        return Err(PrecompileError::Overflow("parameter exceeds input size"));
+    }
+    Ok(v)
 }
 
 /// Read `len` raw bytes and decode as big-endian BigUint.
 fn read_biguint(data: &[u8], offset: &mut usize, len: usize) -> Result<BigUint, PrecompileError> {
-    if *offset + len > data.len() {
+    if len > data.len() || *offset > data.len() - len {
         return Err(PrecompileError::InputTooShort);
     }
     let val = BigUint::from_bytes_be(&data[*offset..*offset + len]);
@@ -95,6 +99,11 @@ fn decode_vector(
     n: usize,
     coeff_bytes: usize,
 ) -> Result<Vec<BigUint>, PrecompileError> {
+    let total = n.checked_mul(coeff_bytes)
+        .ok_or(PrecompileError::Overflow("n * coeff_bytes overflow"))?;
+    if total > data.len() || *offset > data.len() - total {
+        return Err(PrecompileError::InputTooShort);
+    }
     let mut v = Vec::with_capacity(n);
     for _ in 0..n {
         v.push(read_biguint(data, offset, coeff_bytes)?);
@@ -176,10 +185,11 @@ fn try_decode_ntt_fast(
     let fast = FastNttParams::new(q, n, psi).map_err(PrecompileError::InvalidParams)?;
     let cb = fast.coeff_bytes;
 
-    if offset + n * cb > input.len() {
+    let total = n.checked_mul(cb).ok_or(PrecompileError::Overflow("n * coeff_bytes overflow"))?;
+    if total > input.len() || offset > input.len() - total {
         return Err(PrecompileError::InputTooShort);
     }
-    if offset + n * cb != input.len() {
+    if offset + total != input.len() {
         return Err(PrecompileError::BadLength);
     }
 
@@ -204,7 +214,7 @@ fn try_decode_vec_fast(
         return Ok(None);
     }
 
-    if offset + q_len > input.len() {
+    if q_len > input.len() || offset > input.len() - q_len {
         return Err(PrecompileError::InputTooShort);
     }
     let q = bytes_to_u64(&input[offset..offset + q_len]);
@@ -216,9 +226,10 @@ fn try_decode_vec_fast(
 
     let q_bits = 64 - q.leading_zeros();
     let cb = (q_bits as usize + 7) / 8;
-    let expected = n * cb * 2;
+    let expected = n.checked_mul(cb).and_then(|v| v.checked_mul(2))
+        .ok_or(PrecompileError::Overflow("n * coeff_bytes overflow"))?;
 
-    if offset + expected > input.len() {
+    if expected > input.len() || offset > input.len() - expected {
         return Err(PrecompileError::InputTooShort);
     }
     if offset + expected != input.len() {
@@ -273,6 +284,9 @@ fn decode_vec_input(
     let n = read_word_usize(input, &mut offset)?;
 
     let q = read_biguint(input, &mut offset, q_len)?;
+    if q.is_zero() {
+        return Err(PrecompileError::InvalidParams("q must be nonzero"));
+    }
 
     let coeff_bytes = (q.bits() as usize + 7) / 8;
     let a = decode_vector(input, &mut offset, n, coeff_bytes)?;

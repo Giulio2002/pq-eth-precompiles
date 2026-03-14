@@ -1,0 +1,42 @@
+[package]
+name = "eth-ntt-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.eth-ntt]
+path = ".."
+
+[[bin]]
+name = "fuzz_ntt_fw"
+path = "fuzz_targets/fuzz_ntt_fw.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_ntt_inv"
+path = "fuzz_targets/fuzz_ntt_inv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_vecmulmod"
+path = "fuzz_targets/fuzz_vecmulmod.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_vecaddmod"
+path = "fuzz_targets/fuzz_vecaddmod.rs"
+test = false
+doc = false
+bench = false
