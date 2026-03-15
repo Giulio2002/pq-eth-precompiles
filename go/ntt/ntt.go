@@ -5,9 +5,15 @@
 package ntt
 
 /*
+#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/lib/darwin_amd64 -leth_ntt
 #cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/lib/darwin_arm64 -leth_ntt
 #cgo linux,amd64 LDFLAGS: -L${SRCDIR}/lib/linux_amd64 -leth_ntt
+#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/lib/linux_arm64 -leth_ntt
+#cgo linux,riscv64 LDFLAGS: -L${SRCDIR}/lib/linux_riscv64 -leth_ntt
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/lib/windows_amd64 -leth_ntt
+#cgo windows,arm64 LDFLAGS: -L${SRCDIR}/lib/windows_arm64 -leth_ntt
 #cgo linux LDFLAGS: -ldl -lpthread -lm
+#cgo windows LDFLAGS: -lws2_32 -luserenv -lbcrypt -lntdll
 #include "eth_ntt.h"
 */
 import "C"
