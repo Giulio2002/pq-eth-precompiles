@@ -121,3 +121,38 @@ Each coefficient is a 2-byte big-endian unsigned integer in [0, 12288].
 | **FALCON_VERIFY** | **8.1 µs** | **2800** |
 
 Gas prices target 350 Mgas/s throughput.
+
+---
+
+## On-chain verification (FalconVerifierV5.yul)
+
+The V5 contract is a minimal Yul wrapper around FALCON_VERIFY:
+
+```yul
+calldatacopy(0, 0, calldatasize())
+if iszero(staticcall(gas(), 0x17, 0, calldatasize(), 0, 0x20)) { revert(0,0) }
+return(0, 0x20)
+```
+
+**Calldata layout** = precompile input (zero rearrangement):
+```
+s2(1024, 512×uint16 BE) | ntth(1024, 512×uint16 BE) | salt(40) | msg(var)
+```
+
+| Metric | Value |
+|---|---|
+| Runtime bytecode | 25 bytes |
+| Deploy gas | 58,586 |
+| Verify gas (total tx) | ~97,000 |
+
+### Gas breakdown
+
+| Component | Gas | % |
+|---|---|---|
+| Base tx | 21,000 | 21.6% |
+| Calldata (2.1 KB) | ~30,600 | 31.5% |
+| Cold STATICCALL | 2,600 | 2.7% |
+| FALCON_VERIFY precompile | 2,800 | 2.9% |
+| EVM overhead | ~40,000 | 41.3% |
+
+The actual cryptography (NTT + SHAKE256 + norm check) is **2.9%** of total gas. The rest is EVM fixed costs.
