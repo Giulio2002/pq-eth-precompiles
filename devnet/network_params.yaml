@@ -1,0 +1,15 @@
+participants:
+  - el_type: erigon
+    el_image: erigon-ntt:latest
+    cl_type: lighthouse
+    cl_image: sigp/lighthouse:latest
+    count: 1
+    supernode: true
+
+network_params:
+  preset: minimal
+  num_validator_keys_per_node: 128
+  electra_fork_epoch: 0
+  fulu_fork_epoch: 0
+
+additional_services: []

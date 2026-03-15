@@ -1,0 +1,3 @@
+web3>=6.0
+py-solc-x>=2.0
+pqcrypto>=0.1
