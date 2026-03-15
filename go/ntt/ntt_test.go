@@ -209,6 +209,87 @@ func TestPrecompileEmptyInput(t *testing.T) {
 	}
 }
 
+func benchPrecompileInput() []byte {
+	return encodeNttInput(falconQ, falconPsi(), falconN, func() []uint64 {
+		a := make([]uint64, falconN)
+		for i := range a {
+			a[i] = uint64(i) % falconQ
+		}
+		return a
+	}())
+}
+
+func BenchmarkNttFwPrecompile(b *testing.B) {
+	input := benchPrecompileInput()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NttFwPrecompile(input)
+	}
+}
+
+func BenchmarkNttInvPrecompile(b *testing.B) {
+	input := benchPrecompileInput()
+	_, fwdOut, _ := NttFwPrecompile(input)
+	// re-encode forward output as inv input
+	cb := (big.NewInt(falconQ).BitLen() + 7) / 8
+	nttCoeffs := make([]uint64, falconN)
+	for i := 0; i < falconN; i++ {
+		v := new(big.Int).SetBytes(fwdOut[i*cb : (i+1)*cb])
+		nttCoeffs[i] = v.Uint64()
+	}
+	invInput := encodeNttInput(falconQ, falconPsi(), falconN, nttCoeffs)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NttInvPrecompile(invInput)
+	}
+}
+
+func encodeVecInput(q uint64, n int, a, b []uint64) []byte {
+	qBytes := big.NewInt(int64(q)).Bytes()
+	cb := (big.NewInt(int64(q)).BitLen() + 7) / 8
+
+	var out []byte
+	out = append(out, encodeWord(uint64(len(qBytes)))...)
+	out = append(out, encodeWord(uint64(n))...)
+	out = append(out, qBytes...)
+
+	for _, vec := range [][]uint64{a, b} {
+		for _, c := range vec {
+			buf := make([]byte, cb)
+			vb := big.NewInt(int64(c)).Bytes()
+			copy(buf[cb-len(vb):], vb)
+			out = append(out, buf...)
+		}
+	}
+	return out
+}
+
+func benchVecPrecompileInput() []byte {
+	a := make([]uint64, falconN)
+	b := make([]uint64, falconN)
+	for i := range a {
+		a[i] = uint64(i*7+3) % falconQ
+		b[i] = uint64(i*13+5) % falconQ
+	}
+	return encodeVecInput(falconQ, falconN, a, b)
+}
+
+func BenchmarkVecMulModPrecompile(b *testing.B) {
+	input := benchVecPrecompileInput()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		VecMulModPrecompile(input)
+	}
+}
+
+func BenchmarkVecAddModPrecompile(b *testing.B) {
+	input := benchVecPrecompileInput()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		VecAddModPrecompile(input)
+	}
+}
+
 func BenchmarkNttForward(b *testing.B) {
 	p, _ := NewFastParams(falconQ, falconN, falconPsi())
 	defer p.Close()
