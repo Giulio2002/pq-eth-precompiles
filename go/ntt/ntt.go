@@ -5,9 +5,10 @@
 package ntt
 
 /*
-#cgo LDFLAGS: -L${SRCDIR}/../../target/release -leth_ntt
+#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/lib/darwin_arm64 -leth_ntt
+#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/lib/linux_amd64 -leth_ntt
 #cgo linux LDFLAGS: -ldl -lpthread -lm
-#include "../../include/eth_ntt.h"
+#include "eth_ntt.h"
 */
 import "C"
 
