@@ -2,5 +2,5 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let _ = eth_ntt::ntt_fw_precompile(data);
+    let _ = pq_eth_precompiles::ntt_fw_precompile(data);
 });

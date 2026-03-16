@@ -1,8 +1,8 @@
 [package]
-name = "eth-ntt"
+name = "pq-eth-precompiles"
 version = "0.1.0"
 edition = "2021"
-description = "EIP NTT precompile: Number Theoretic Transform operations for Ethereum"
+description = "Post-quantum lattice precompiles for Ethereum: NTT, SHAKE256, Falcon-512 verification"
 license = "MIT"
 
 [lib]

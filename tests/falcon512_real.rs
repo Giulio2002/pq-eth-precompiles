@@ -1,4 +1,4 @@
-use eth_ntt::{
+use pq_eth_precompiles::{
     decode_output, encode_ntt_input, encode_vec_input, ntt_fw_precompile, ntt_inv_precompile,
     ntt_vecmulmod_precompile, FieldParams,
 };

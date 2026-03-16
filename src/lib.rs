@@ -1,4 +1,4 @@
-pub mod compact;
+pub mod falcon;
 pub mod fast;
 mod ffi;
 mod field;

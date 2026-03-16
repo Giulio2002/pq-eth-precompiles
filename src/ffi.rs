@@ -1,4 +1,4 @@
-use crate::compact;
+use crate::falcon;
 use crate::fast::{self, FastNttParams};
 use crate::precompile::PrecompileError;
 use std::slice;
@@ -101,7 +101,7 @@ pub unsafe extern "C" fn eth_ntt_falcon_verify(
     output_out: *mut *mut u8, output_len_out: *mut usize,
 ) -> i32 {
     let data = slice::from_raw_parts(input, input_len);
-    match compact::falcon_verify_precompile(data) {
+    match falcon::falcon_verify_precompile(data) {
         Some(out) => { write_output(out, output_out, output_len_out); 0 }
         None => -1,
     }
@@ -115,7 +115,7 @@ pub unsafe extern "C" fn eth_ntt_lp_norm(
     output_out: *mut *mut u8, output_len_out: *mut usize,
 ) -> i32 {
     let data = slice::from_raw_parts(input, input_len);
-    match compact::lp_norm_precompile(data) {
+    match falcon::lp_norm_precompile(data) {
         Some(out) => { write_output(out, output_out, output_len_out); 0 }
         None => -1,
     }
