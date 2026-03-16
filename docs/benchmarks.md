@@ -2,6 +2,14 @@
 
 Measured on Kurtosis devnet (Erigon + Lighthouse, Osaka fork). 16,090 fuzz iterations, 0 failures.
 
+## Contracts
+
+- **FalconVerifierNTT**: Calls 4 generic precompiles (NTT_FW, NTT_INV, VECMULMOD, SHAKE256) and runs the L2 norm check on-chain as a 512-iteration EVM loop.
+- **FalconVerifierNTTWithLpNorm**: Same as NTT but replaces the on-chain norm loop with a 5th precompile call (LP_NORM). All math is in precompiles.
+- **FalconVerifierDirectVerify**: Calls a single precompile (FALCON_VERIFY) that does everything — SHAKE256, NTT, multiply, inverse NTT, and norm check — in one shot.
+
+All three verify the same Falcon-512 signature and do the same 8.1 us of cryptography. They differ only in how that work is split between precompiles and on-chain EVM code.
+
 ## Transaction cost
 
 | Contract | Total Gas | Overhead | Verification | Verification Time |
@@ -15,6 +23,8 @@ Measured on Kurtosis devnet (Erigon + Lighthouse, Osaka fork). 16,090 fuzz itera
 - **Verification**: gas spent doing actual Falcon-512 math inside precompiles
 - **Verification Time**: wall-clock time for the cryptography in Rust (same for all three)
 
+> **Note on verification gas**: NTTWithLpNorm shows lower verification gas (1,666) than DirectVerify (2,800) because the individual precompile gas prices (NTT_FW=600, SHAKE256=48, VECMULMOD=18, etc.) are stale — set before a caching optimization that made them 5-6x faster. At the 350 Mgas/s target, the sum of parts should be ~3,150 gas. The total transaction gas is nearly identical because the real difference between the two contracts is just the number of cold STATICCALL accesses: NTTWithLpNorm makes 5 calls (5 x 2,600 = 13,000 gas) while DirectVerify makes 1 call (2,600 gas), and this 10,400 gas difference offsets the lower precompile pricing.
+
 ## Overhead breakdown
 
 | Component | NTT | NTTWithLpNorm | DirectVerify |
@@ -26,7 +36,7 @@ Measured on Kurtosis devnet (Erigon + Lighthouse, Osaka fork). 16,090 fuzz itera
 | EVM glue | ~46,775 | ~32,134 | ~41,960 |
 | **Total overhead** | **109,175** | **97,134** | **95,560** |
 
-NTTWithLpNorm has higher overhead than DirectVerify due to 4 extra cold STATICCALL accesses (10,400 gas). DirectVerify makes a single call.
+A cold STATICCALL costs 2,600 gas per unique address (EIP-2929). This is why DirectVerify (1 address) beats NTTWithLpNorm (5 addresses) despite identical cryptographic work.
 
 ## Comparison
 
