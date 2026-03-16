@@ -10,6 +10,7 @@ Six precompiles following existing Ethereum conventions.
 | `0x15` | VECADDMOD | 32-byte padded params + two vectors | ecrecover (`0x01`) |
 | `0x16` | SHAKE256 | output-length + data | SHA-256 (`0x02`) |
 | `0x17` | FALCON_VERIFY | fixed arrays + variable data → bool | bn256Pairing (`0x08`) |
+| `0x18` | LP_NORM | 32-byte padded params + three vectors → bool | bn256Pairing (`0x08`) |
 
 ### Conventions
 
@@ -116,6 +117,31 @@ Each coefficient is a 2-byte big-endian unsigned integer in [0, 12288].
 
 ---
 
+## `0x18` — LP_NORM
+
+Generalized centered L2 norm check for any lattice-based signature scheme.
+
+Computes `||(hashed - s1) mod q||^2 + ||s2||^2 < bound` with centering: each coefficient mapped to `min(x, q-x)`.
+
+**Input:**
+```
+q      (32 bytes BE) — field modulus
+n      (32 bytes BE) — dimension
+bound  (32 bytes BE) — squared norm bound
+cb     (32 bytes BE) — coefficient byte width (2 for Falcon, 4 for Dilithium)
+s1     (n × cb bytes, BE) — first component
+s2     (n × cb bytes, BE) — second component
+hashed (n × cb bytes, BE) — hash-to-point result
+```
+
+**Output:** 32 bytes — `0x0000...0001` if norm is below bound, `0x0000...0000` otherwise.
+
+**Gas:** 400
+
+Works for Falcon-512 (q=12289, n=512, cb=2, bound=34034726), Falcon-1024, Dilithium, and any future lattice scheme.
+
+---
+
 ## Benchmarks (Apple M4)
 
 | Precompile | Execution time | Gas |
@@ -126,6 +152,7 @@ Each coefficient is a 2-byte big-endian unsigned integer in [0, 12288].
 | VECADDMOD | 590 ns | variable |
 | SHAKE256 | 1.8 us | variable |
 | **FALCON_VERIFY** | **8.1 us** | **2800** |
+| LP_NORM | 1.0 us | 400 |
 
 Gas prices target 350 Mgas/s throughput.
 
