@@ -23,7 +23,7 @@ All three verify the same Falcon-512 signature and do the same 8.1 us of cryptog
 - **Verification**: gas spent doing actual Falcon-512 math inside precompiles
 - **Verification Time**: wall-clock time for the cryptography in Rust (same for all three)
 
-> **Note on verification gas**: NTTWithLpNorm shows lower verification gas (1,666) than DirectVerify (2,800) because the individual precompile gas prices (NTT_FW=600, SHAKE256=48, VECMULMOD=18, etc.) are stale — set before a caching optimization that made them 5-6x faster. At the 350 Mgas/s target, the sum of parts should be ~3,150 gas. The total transaction gas is nearly identical because the real difference between the two contracts is just the number of cold STATICCALL accesses: NTTWithLpNorm makes 5 calls (5 x 2,600 = 13,000 gas) while DirectVerify makes 1 call (2,600 gas), and this 10,400 gas difference offsets the lower precompile pricing.
+> **Note on verification gas**: NTTWithLpNorm shows lower verification gas (1,666) than DirectVerify (2,800) because the individual precompile gas prices (NTT_FW=600, SHAKE256=48, VECMULMOD=18, etc.) are stale — set before a caching optimization that made them 5-6x faster. At the 350 Mgas/s target, the sum of parts should be ~3,150 gas. The total transaction gas is nearly identical because the real difference between the two contracts is just the number of cold STATICCALL accesses: NTTWithLpNorm makes 5 calls (5 x 2,600 = 13,000 gas) while DirectVerify makes 1 call (2,600 gas), and this 10,400 gas difference offsets the lower wrongful precompile pricing (but this is just a detail anyways).
 
 ## Overhead breakdown
 
