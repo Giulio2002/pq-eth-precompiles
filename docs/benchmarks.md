@@ -12,7 +12,7 @@ All three verify the same Falcon-512 signature and do the same cryptography.
 
 ## Transaction cost
 
-| Contract | Total Gas | Overhead | Verification |
+| Contract | Total Gas | Overhead | Falcon Verification |
 |---|---|---|---|
 | NTT | 210,441 | 109,175 | 101,266 |
 | NTTWithLpNorm | 98,800 | 97,134 | 1,666 |
