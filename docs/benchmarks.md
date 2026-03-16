@@ -4,48 +4,44 @@ Measured on Kurtosis devnet (Erigon + Lighthouse, Osaka fork). 16,090 fuzz itera
 
 ## Transaction cost
 
-Total gas charged to the sender, including base tx fee, calldata, and execution.
-
-| Contract | Verify Gas | Runtime Size | Deploy Gas | Precompile Calls |
-|---|---|---|---|---|
-| FalconVerifierNTT | 210,441 | 322 B | 122,572 | 4 (0x12, 0x13, 0x14, 0x16) |
-| FalconVerifierNTTWithLpNorm | 98,780 | 238 B | 104,396 | 5 (0x12, 0x13, 0x14, 0x16, 0x18) |
-| FalconVerifierDirectVerify | 98,780 | 25 B | 58,586 | 1 (0x17) |
-
-All three take the same calldata: `s2(1024) | ntth(1024) | salt_msg(~69)` = 2,117 bytes.
-
-## Verification cost
-
-Gas spent on the actual signature verification, excluding base tx (21,000) and calldata intrinsic (~31,100).
-
-| Contract | Execution Gas | Precompile Gas | On-chain norm | EVM overhead | Crypto % |
+| Contract | Total Gas | Fixed Overhead | Verification | Crypto | Crypto Time |
 |---|---|---|---|---|---|
-| FalconVerifierNTT | 158,341 | 1,266 | ~100,000 | ~57,075 | 0.8% |
-| FalconVerifierNTTWithLpNorm | 46,680 | 1,666 | 0 | ~45,014 | 3.6% |
-| FalconVerifierDirectVerify | 46,680 | 2,800 | 0 | ~43,880 | 6.0% |
+| FalconVerifierNTT | 210,441 | 52,100 | 158,341 | 1,266 | 8.1 us |
+| FalconVerifierNTTWithLpNorm | 98,780 | 52,100 | 46,680 | 1,666 | 8.1 us |
+| FalconVerifierDirectVerify | 98,780 | 52,100 | 46,680 | 2,800 | 8.1 us |
 
-*Execution Gas = Verify Gas - base tx (21,000) - calldata intrinsic (~31,100)*
+- **Total Gas**: charged to sender (includes everything)
+- **Fixed Overhead**: base tx (21,000) + calldata intrinsic (~31,100) — same for all, unavoidable
+- **Verification**: Total - Fixed Overhead — what the contract actually executes
+- **Crypto**: gas spent inside precompiles doing actual math
+- **Crypto Time**: wall-clock time for the actual Falcon-512 verification in Rust (same math for all three)
 
-### What limits each contract
+All three do the same cryptography in the same time. The difference is how much EVM overhead surrounds it.
 
-- **FalconVerifierNTT**: The on-chain norm loop (512 iterations of `mod` + `mul` + `add`) costs ~100k gas — the same math takes 1 microsecond in Rust.
+## Where the verification gas goes
 
-- **FalconVerifierNTTWithLpNorm**: The norm loop is replaced by LP_NORM at 0x18 (400 gas). The remaining overhead is 5 cold address accesses (5 × 2,600 = 13,000) plus memory management.
+| | NTT | NTTWithLpNorm | DirectVerify |
+|---|---|---|---|
+| Cold STATICCALL(s) | 10,400 (4x) | 13,000 (5x) | 2,600 (1x) |
+| On-chain norm loop | ~100,000 | 0 | 0 |
+| Memory + calldatacopy | ~46,675 | ~32,014 | ~41,280 |
+| Precompile compute | 1,266 | 1,666 | 2,800 |
+| **Verification total** | **158,341** | **46,680** | **46,680** |
 
-- **FalconVerifierDirectVerify**: One precompile call does everything. The 43k overhead is 1 cold address access (2,600) + memory + calldata intrinsic double-counting in the trace.
-
-### Fixed costs (same for all contracts)
+## Fixed overhead breakdown
 
 | Cost | Gas | Why |
 |---|---|---|
 | Base transaction | 21,000 | EIP-2718, every tx pays this |
 | Calldata (2,117 bytes) | ~31,100 | 16 gas/nonzero byte, 4 gas/zero byte |
-| **Total fixed** | **~52,100** | **Cannot be reduced** |
+| **Total** | **~52,100** | **Cannot be reduced** |
 
-## Comparison
+## Comparison with existing schemes
 
-| Scheme | Gas | Precompile | Post-quantum |
+| Scheme | Precompile Gas | Total Tx Gas | Post-quantum |
 |---|---|---|---|
-| ECDSA recovery | 3,000 | ecrecover (0x01) | No |
-| **Falcon-512** | **2,800** | **FALCON_VERIFY (0x17)** | **Yes** |
-| BLS12-381 pairing | 43,000 | 0x0f | No |
+| ECDSA (ecrecover) | 3,000 | ~28,000 | No |
+| **Falcon-512 (DirectVerify)** | **2,800** | **98,780** | **Yes** |
+| BLS12-381 pairing (1 pair) | 43,000 | ~65,000 | No |
+
+Falcon-512 precompile execution is cheaper than ecrecover. The higher total tx gas is due to larger calldata (2 KB vs 128 bytes for ECDSA).
