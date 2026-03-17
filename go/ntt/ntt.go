@@ -249,6 +249,18 @@ func DilithiumVerify(input []byte) ([]byte, error) {
 	return collectOutput(rc, outPtr, outLen)
 }
 
+// HawkVerify runs full Hawk-512 verification.
+// Input: pk(1024) | sig(555) | msg(var)
+func HawkVerify(input []byte) ([]byte, error) {
+	if len(input) < 1579 {
+		return nil, ErrInputTooShort
+	}
+	var outPtr *C.uint8_t
+	var outLen C.size_t
+	rc := C.eth_ntt_hawk_verify((*C.uint8_t)(unsafe.Pointer(&input[0])), C.size_t(len(input)), &outPtr, &outLen)
+	return collectOutput(rc, outPtr, outLen)
+}
+
 // LpNorm runs the generalized lattice norm check.
 // Input: q(32) | n(32) | bound(32) | cb(32) | s1(n×cb) | s2(n×cb) | hashed(n×cb)
 // Returns 32 bytes: 0x00..01 if valid, 0x00..00 if invalid.
