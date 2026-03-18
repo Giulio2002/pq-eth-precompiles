@@ -176,40 +176,6 @@ func u64ptr(s []uint64) *C.uint64_t {
 	return (*C.uint64_t)(unsafe.Pointer(&s[0]))
 }
 
-// RebuildS0Precompile recovers s0 for Hawk verification.
-func RebuildS0Precompile(input []byte) ([]byte, error) {
-	if len(input) < 32 {
-		return nil, ErrInputTooShort
-	}
-	var outPtr *C.uint8_t
-	var outLen C.size_t
-	rc := C.eth_ntt_rebuild_s0((*C.uint8_t)(unsafe.Pointer(&input[0])), C.size_t(len(input)), &outPtr, &outLen)
-	return collectOutput(rc, outPtr, outLen)
-}
-
-// QnormPrecompile runs the Hawk Q-norm check via dual-NTT CRT.
-func QnormPrecompile(input []byte) ([]byte, error) {
-	if len(input) < 64 {
-		return nil, ErrInputTooShort
-	}
-	var outPtr *C.uint8_t
-	var outLen C.size_t
-	rc := C.eth_ntt_qnorm((*C.uint8_t)(unsafe.Pointer(&input[0])), C.size_t(len(input)), &outPtr, &outLen)
-	return collectOutput(rc, outPtr, outLen)
-}
-
-// Fx32FFTPrecompile runs the fixed-point FFT (Hawk reference format).
-// Input: logn(32) | direction(32) | shift(32) | coeffs(n*4 LE)
-func Fx32FFTPrecompile(input []byte) ([]byte, error) {
-	if len(input) < 96 {
-		return nil, ErrInputTooShort
-	}
-	var outPtr *C.uint8_t
-	var outLen C.size_t
-	rc := C.eth_ntt_fx32_fft((*C.uint8_t)(unsafe.Pointer(&input[0])), C.size_t(len(input)), &outPtr, &outLen)
-	return collectOutput(rc, outPtr, outLen)
-}
-
 // VecSubModPrecompile executes element-wise modular subtraction.
 func VecSubModPrecompile(input []byte) ([]byte, error) {
 	if len(input) == 0 {

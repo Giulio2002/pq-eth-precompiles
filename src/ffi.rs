@@ -179,51 +179,6 @@ pub unsafe extern "C" fn eth_ntt_lp_norm(
     }
 }
 
-/// REBUILD_S0 — recover s0 for Hawk verification.
-/// Input: logn(32) | q00_half(hn×2 LE) | q01(n×2 LE) | h0(n/8 bytes) | w1(n×2 LE)
-/// Output: n×2 bytes (s0 as i16 LE)
-#[no_mangle]
-pub unsafe extern "C" fn eth_ntt_rebuild_s0(
-    input: *const u8, input_len: usize,
-    output_out: *mut *mut u8, output_len_out: *mut usize,
-) -> i32 {
-    let data = slice::from_raw_parts(input, input_len);
-    match crate::fx32_fft::rebuild_s0_precompile(data) {
-        Some(out) => { write_output(out, output_out, output_len_out); 0 }
-        None => -1,
-    }
-}
-
-/// QNORM — Hawk Q-norm check via dual-NTT CRT.
-/// Input: logn(32) | bound(32) | q00(hn×2 LE) | q01(n×2 LE) | t0(n×2 LE) | t1(n×2 LE)
-/// Output: 32 bytes bool
-#[no_mangle]
-pub unsafe extern "C" fn eth_ntt_qnorm(
-    input: *const u8, input_len: usize,
-    output_out: *mut *mut u8, output_len_out: *mut usize,
-) -> i32 {
-    let data = slice::from_raw_parts(input, input_len);
-    match crate::fx32_fft::qnorm_precompile(data) {
-        Some(out) => { write_output(out, output_out, output_len_out); 0 }
-        None => -1,
-    }
-}
-
-/// Fixed-point FFT (Hawk reference format).
-/// Input: logn(32 BE) | direction(32 BE) | shift(32 BE) | coeffs(n × 4 LE)
-/// Output: n × 4 bytes (LE i32 coefficients)
-#[no_mangle]
-pub unsafe extern "C" fn eth_ntt_fx32_fft(
-    input: *const u8, input_len: usize,
-    output_out: *mut *mut u8, output_len_out: *mut usize,
-) -> i32 {
-    let data = slice::from_raw_parts(input, input_len);
-    match crate::fx32_fft::fx32_fft_precompile(data) {
-        Some(out) => { write_output(out, output_out, output_len_out); 0 }
-        None => -1,
-    }
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn eth_ntt_free_buffer(ptr: *mut u8, len: usize) {
     if !ptr.is_null() && len > 0 {

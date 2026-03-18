@@ -37,28 +37,6 @@ int32_t eth_ntt_vecaddmod_precompile(
     const uint8_t *input, size_t input_len,
     uint8_t **output_out, size_t *output_len_out);
 
-/* REBUILD_S0 — recover s0 for Hawk verification.
- * Input: logn(32) | q00_half(hn*2 LE) | q01(n*2 LE) | h0(n/8) | w1(n*2 LE)
- * Output: n*2 bytes (s0 i16 LE) */
-int32_t eth_ntt_rebuild_s0(
-    const uint8_t *input, size_t input_len,
-    uint8_t **output_out, size_t *output_len_out);
-
-/* QNORM — Hawk Q-norm via dual-NTT CRT.
- * Input: logn(32) | bound(32) | q00(hn*2 LE) | q01(n*2 LE) | t0(n*2 LE) | t1(n*2 LE)
- * Output: 32 bytes bool */
-int32_t eth_ntt_qnorm(
-    const uint8_t *input, size_t input_len,
-    uint8_t **output_out, size_t *output_len_out);
-
-/* Fixed-point FFT (Hawk reference format).
- * Input: logn(32 BE) | direction(32 BE) | shift(32 BE) | coeffs(n*4 LE)
- * direction: 0=forward, 1=inverse. logn: 8,9,10. shift: scaling bits.
- * Output: n*4 bytes (LE i32 coefficients) */
-int32_t eth_ntt_fx32_fft(
-    const uint8_t *input, size_t input_len,
-    uint8_t **output_out, size_t *output_len_out);
-
 void eth_ntt_free_buffer(uint8_t *ptr, size_t len);
 
 /* ── Fast direct API ──
