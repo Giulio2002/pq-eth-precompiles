@@ -37,6 +37,11 @@ int32_t eth_ntt_vecaddmod_precompile(
     const uint8_t *input, size_t input_len,
     uint8_t **output_out, size_t *output_len_out);
 
+/* REBUILD_S0 — recover s0 for Hawk verification. */
+int32_t eth_ntt_rebuild_s0(
+    const uint8_t *input, size_t input_len,
+    uint8_t **output_out, size_t *output_len_out);
+
 /* QNORM — Hawk Q-norm via dual-NTT CRT. */
 int32_t eth_ntt_qnorm(
     const uint8_t *input, size_t input_len,
